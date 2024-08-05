@@ -1,0 +1,10 @@
+{
+    "displayName": "MindurkaCompat",
+    "name": "MindurkaCompat",
+    "author": "buj",
+    "main": "mindurka.Main",
+    "description": "Mod that adds extra compatibility with Mindurka",
+    "version": 1.0,
+    "minGameVersion": "146",
+    "hidden": true
+}
