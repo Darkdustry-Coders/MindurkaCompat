@@ -1,7 +1,7 @@
 import groovy.json.JsonSlurper
 
 plugins {
-    id 'org.jetbrains.kotlin.jvm' version '2.0.0'
+    id 'java'
 }
 
 def json = new JsonSlurper()
@@ -29,10 +29,11 @@ dependencies {
     compileOnly "com.github.Anuken.Arc:arc-core:$mindustryVersion"
     compileOnly "com.github.Anuken.Mindustry:core:$mindustryVersion"
     annotationProcessor "com.github.Anuken:jabel:$jabelVersion"
-    testImplementation 'org.jetbrains.kotlin:kotlin-test'
 }
 
 jar {
+    archiveFileName = "${jar.archiveBaseName.get()}Desktop.jar"
+
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     }
@@ -40,9 +41,49 @@ jar {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
+def sdkRoot = System.getenv("ANDROID_HOME") ?: System.getenv("ANDROID_SDK_ROOT")
+
+tasks.register("jarAndroid") {
+    dependsOn jar
+
+    doLast {
+        if (!sdkRoot || !new File(sdkRoot).exists()) throw new GradleException("No valid Android SDK found. Ensure that ANDROID_HOME is set to your Android SDK directory.");
+
+        def platformRoot = new File("$sdkRoot/platforms/").listFiles().sort().reverse().find{ f -> new File(f, "android.jar").exists()}
+
+        if (!platformRoot) throw new GradleException("No android.jar found. Ensure that you have an Android platform installed.")
+
+        //collect dependencies needed for desugaring
+        def dependencies = (configurations.compileClasspath.asList() + configurations.runtimeClasspath.asList() + [new File(platformRoot, "android.jar")]).collect{ "--classpath $it.path" }.join(" ")
+
+        def buildToolsRoot = new File("$sdkRoot/build-tools/").listFiles().sort { x, y -> x.name <=> y.name }.first().absolutePath
+
+        //dex and desugar files - this requires d8 in your PATH
+        "env d8 $dependencies --min-api 14 --output ${jar.archiveBaseName.get()}Android.jar ${jar.archiveBaseName.get()}Desktop.jar"
+                .execute(["PATH=$buildToolsRoot:${System.getenv("PATH")}"], new File("$rootDir/build/libs/")).waitForProcessOutput(System.out, System.err)
+    }
+}
+
+tasks.register("deploy", Jar) {
+    dependsOn jar
+    dependsOn jarAndroid
+
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    from { [ zipTree("$rootDir/build/libs/${jar.archiveBaseName.get()}Android.jar"), zipTree("$rootDir/build/libs/${jar.archiveBaseName.get()}Desktop.jar") ] }
+
+    doLast {
+        delete {
+            delete "$rootDir/build/libs/${jar.archiveBaseName.get()}Android.jar"
+            delete "$rootDir/build/libs/${jar.archiveBaseName.get()}Desktop.jar"
+        }
+    }
+}
+
+tasks.named("build") {
+    dependsOn deploy
+}
+
 test {
     useJUnitPlatform()
-}
-kotlin {
-    jvmToolchain(8)
 }
