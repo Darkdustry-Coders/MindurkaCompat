@@ -160,6 +160,7 @@ public class OEditorDialog extends MapEditorDialog {
         if (MVars.rules.gamemode() != null) MVars.rules.gamemode().editingResumed();
         Vars.state.rules = (lastSavedRules == null ? new Rules() : lastSavedRules);
         lastSavedRules = null;
+        // MVars.rules = new MRules(Vars.state.rules, Vars.world.width(), Vars.world.height());
         // saved = false;
         Reflect.invoke(EditorRenderer.class, editor.renderer, "recache", Util.noargs);
     }
@@ -172,7 +173,7 @@ public class OEditorDialog extends MapEditorDialog {
             //only reset the player; logic.reset() will clear entities, which we do not want
             Vars.state.teams = new Teams();
             Vars.player.reset();
-            Gamemode.editor.apply(Vars.state.rules);
+            Vars.state.rules = Gamemode.editor.apply(Vars.state.rules.copy());
             Vars.state.rules.limitMapArea = false;
             Vars.state.rules.sector = null;
             Vars.state.rules.fog = false;
@@ -469,7 +470,7 @@ public class OEditorDialog extends MapEditorDialog {
         if (!MVars.toolOptions.tool.blockTool) return;
 
         blockOptions.table(t -> {
-            t.label(() -> "Brush size").left().pad(4f);
+            t.label(() -> "@editor.mindurka.brushsize").left().pad(4f);
 
             Slider slider = new Slider(1, 16, 1, false);
             slider.setValue(MVars.toolOptions.radius);
@@ -523,7 +524,7 @@ public class OEditorDialog extends MapEditorDialog {
             Table root = new Table();
             Table table = new Table();
 
-            root.label(() -> "Cliff sides").left().pad(4f);
+            root.label(() -> "@editor.mindurka.cliffsides").left().pad(4f);
             root.row();
             root.add(table).left().growX().fillX();
             table.defaults().size(size, size).pad(0).left();

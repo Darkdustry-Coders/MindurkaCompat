@@ -1,8 +1,6 @@
 package mindurka.rules;
 
-import arc.struct.IntMap;
 import mindurka.ui.RulesWrite;
-import mindurka.util.Schematic;
 import mindustry.Vars;
 import mindustry.content.Blocks;
 import mindustry.content.Items;
@@ -75,7 +73,7 @@ public class Forts extends Gamemode {
 
                 thorEnabled = read.r(THOR_ENABLED, true);
                 thorDelay = read.r(THOR_DELAY, 0.25f);
-                thorCooldown = read.r(THOR_COOLDOWN, 0.5f);
+                thorCooldown = read.r(THOR_COOLDOWN, 0.75f);
                 thorDamageMultiplier = read.r(THOR_DAMAGE_MULTIPLIER, 1f);
                 thorRadiusMultiplier = read.r(THOR_DAMAGE_MULTIPLIER, 1f);
                 thorBlock = read.r(THOR_BLOCK, Blocks.thoriumReactor);
@@ -97,6 +95,7 @@ public class Forts extends Gamemode {
                 neoplasiaProgressSpeed = read.r(NEOPLASIA_PROGRESS_SPEED, 80f);
                 neoplasiaDamage = read.r(NEOPLASIA_DAMAGE, 750f);
                 neoplasiaBlock = read.r(NEOPLASIA_BLOCK, Blocks.neoplasiaReactor);
+                if (!neoplasiaBlock.rotate) impactBlock = Blocks.neoplasiaReactor;
             }
         }
 
@@ -113,6 +112,7 @@ public class Forts extends Gamemode {
             write.f("rules.mindurka.thor.cooldown", this::thorCooldown, this::thorCooldown).enabled(this::thorEnabled).min(0);
             write.f("rules.mindurka.thor.damageMultiplier", this::thorDamageMultiplier, this::thorDamageMultiplier).enabled(this::thorEnabled).min(0);
             write.f("rules.mindurka.thor.radiusMultiplier", this::thorRadiusMultiplier, this::thorRadiusMultiplier).enabled(this::thorEnabled).min(0);
+            write.block("rules.mindurka.thor.block", this::thorBlock, this::thorBlock).enabled(this::thorEnabled).filter(block -> !block.isFloor());
             write.spacer();
 
             write.b("rules.mindurka.impact.enabled", this::impactEnabled, this::impactEnabled);
@@ -122,13 +122,16 @@ public class Forts extends Gamemode {
             write.f("rules.mindurka.impact.explosionDamage", this::impactExplosionDamage, this::impactExplosionDamage).enabled(this::impactEnabled).min(0);
             write.f("rules.mindurka.impact.explosionRadius", this::impactExplosionRadius, this::impactExplosionRadius).enabled(this::impactEnabled).min(0);
             write.b("rules.mindurka.impact.instakill", this::impactInstakill, this::impactInstakill).enabled(this::impactEnabled);
+            write.block("rules.mindurka.impact.block", this::impactBlock, this::impactBlock).enabled(this::impactEnabled).filter(block -> block.size == 4 && !block.isFloor());
             write.spacer();
 
             write.b("rules.mindurka.neoplasia.enabled", this::neoplasiaEnabled, this::neoplasiaEnabled);
             write.f("rules.mindurka.neoplasia.delay", this::neoplasiaDelay, this::neoplasiaDelay).enabled(this::neoplasiaEnabled).min(0);
             write.f("rules.mindurka.neoplasia.cooldown", this::neoplasiaCooldown, this::neoplasiaCooldown).enabled(this::neoplasiaEnabled).min(0);
             write.f("rules.mindurka.neoplasia.progressSpeed", this::neoplasiaProgressSpeed, this::neoplasiaProgressSpeed).enabled(this::neoplasiaEnabled).min(0);
+            write.f("rules.mindurka.neoplasia.length", this::neoplasiaLength, this::neoplasiaLength).enabled(this::neoplasiaEnabled).min(0);
             write.f("rules.mindurka.neoplasia.damage", this::neoplasiaDamage, this::neoplasiaDamage).enabled(this::neoplasiaEnabled).min(0);
+            write.block("rules.mindurka.neoplasia.block", this::neoplasiaBlock, this::neoplasiaBlock).enabled(this::neoplasiaEnabled).filter(block -> block.rotate && !block.isFloor());
             write.spacer();
 
             Runnable[] refreshPlotKindRules = new Runnable[1];
@@ -392,6 +395,8 @@ public class Forts extends Gamemode {
             rules.tags.remove(NEOPLASIA_BLOCK);
 
             rules.tags.remove(ENABLE_1VA);
+
+            plotKind.remove();
         }
 
         @Override
@@ -423,7 +428,7 @@ public class Forts extends Gamemode {
             rules.unitHealthMultiplier = 1f;
             rules.attackMode = false;
             rules.possessionAllowed = false;
-            rules.enemyCoreBuildRadius = 30f;
+            rules.enemyCoreBuildRadius = 30f * Vars.tilesize;
             rules.schematicsAllowed = false;
             rules.loadout.clear();
             rules.loadout.add(ItemStack.with(
@@ -442,6 +447,7 @@ public class Forts extends Gamemode {
                     Blocks.heatReactor
             );
             rules.bannedBlocks.addAll(
+                    Blocks.diode,
                     Blocks.cryofluidMixer,
                     Blocks.surgeWall,
                     Blocks.surgeWallLarge,
@@ -518,22 +524,24 @@ public class Forts extends Gamemode {
         public String builtInContentPatch() {
             return
                     "block.scrap-wall.alwaysReplace: true\n" +
-                            "unit.poly.health: 90\n" +
-                            "unit.flare.health: 150\n" +
-                            "block.cyclone.ammoTypes: {\n" +
-                            "    metaglass.splashDamage: 65\n" +
-                            "    blast-compound.splashDamage: 100\n" +
-                            "    plastanium.splashDamage: 95\n" +
-                            "    surge-alloy.splashDamage: 125\n" +
-                            "}\n" +
-                            "block.titam.ammoTypes.thorium: {\n" +
-                            "    buildingDamageMultiplier: 0.01\n" +
-                            "    damage: 200\n" +
-                            "    splashDamage: 800\n" +
-                            "    splashDamagePierce: true\n" +
-                            "    splashDamageRadius: 80\n" +
-                            "}\n" +
-                            "block.oxidation-chamber.canOverdrive: true\n";
+                    "unit.poly.health: 90\n" +
+                    "unit.flare.health: 150\n" +
+                    "block.cyclone.ammoTypes: {\n" +
+                    "    metaglass.splashDamage: 65\n" +
+                    "    blast-compound.splashDamage: 100\n" +
+                    "    plastanium.splashDamage: 95\n" +
+                    "    surge-alloy.splashDamage: 125\n" +
+                    "}\n" +
+                    "block.titan.ammoTypes.thorium: {\n" +
+                    "    buildingDamageMultiplier: 0.01\n" +
+                    "    damage: 200\n" +
+                    "    splashDamage: 800\n" +
+                    "    splashDamagePierce: true\n" +
+                    "    splashDamageRadius: 80\n" +
+                    "}\n" +
+                    "block.oxidation-chamber.canOverdrive: true\n" +
+                    "block.thorium-reactor.health: 10\n" +
+                    "block.neoplasia-reactor.health: 10\n";
         }
     }
 }
