@@ -1,5 +1,6 @@
 package mindurka.rules;
 
+import arc.util.io.Streams;
 import mindurka.ui.RulesWrite;
 import mindustry.Vars;
 import mindustry.content.Blocks;
@@ -9,6 +10,9 @@ import mindustry.game.Rules;
 import mindustry.game.Team;
 import mindustry.type.ItemStack;
 import mindustry.world.Block;
+
+import java.io.IOException;
+import java.util.Objects;
 
 public class Forts extends Gamemode {
     public static final String PREFIX = MRules.PREFIX+".forts";
@@ -43,6 +47,15 @@ public class Forts extends Gamemode {
     public static final String NEOPLASIA_DAMAGE = NEOPLASIA_PREFIX+".damage";
     public static final String NEOPLASIA_BLOCK = NEOPLASIA_PREFIX+".block";
 
+    private static final String builtInContentPatch;
+    static {
+        try {
+            builtInContentPatch = Streams.copyString(Objects.requireNonNull(Impl.class.getClassLoader().getResourceAsStream("patches/forts.hjson")));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     @Override
     public String name() {
         return NAME;
@@ -72,10 +85,10 @@ public class Forts extends Gamemode {
                 enableVnw = read.r(ENABLE_VNW, false);
 
                 thorEnabled = read.r(THOR_ENABLED, true);
-                thorDelay = read.r(THOR_DELAY, 0.25f);
+                thorDelay = read.r(THOR_DELAY, 0.5f);
                 thorCooldown = read.r(THOR_COOLDOWN, 0.75f);
                 thorDamageMultiplier = read.r(THOR_DAMAGE_MULTIPLIER, 1f);
-                thorRadiusMultiplier = read.r(THOR_DAMAGE_MULTIPLIER, 1f);
+                thorRadiusMultiplier = read.r(THOR_RADIUS_MULTIPLIER, 1f);
                 thorBlock = read.r(THOR_BLOCK, Blocks.thoriumReactor);
 
                 impactEnabled = read.r(IMPACT_ENABLED, true);
@@ -93,7 +106,7 @@ public class Forts extends Gamemode {
                 neoplasiaCooldown = read.r(NEOPLASIA_COOLDOWN, 0.25f);
                 neoplasiaLength = read.r(NEOPLASIA_LENGTH, 40);
                 neoplasiaProgressSpeed = read.r(NEOPLASIA_PROGRESS_SPEED, 80f);
-                neoplasiaDamage = read.r(NEOPLASIA_DAMAGE, 750f);
+                neoplasiaDamage = read.r(NEOPLASIA_DAMAGE, 1125f);
                 neoplasiaBlock = read.r(NEOPLASIA_BLOCK, Blocks.neoplasiaReactor);
                 if (!neoplasiaBlock.rotate) impactBlock = Blocks.neoplasiaReactor;
             }
@@ -311,7 +324,7 @@ public class Forts extends Gamemode {
         }
 
         private boolean neoplasiaEnabled;
-        public boolean neoplasiaEnabled() { return impactEnabled; }
+        public boolean neoplasiaEnabled() { return neoplasiaEnabled; }
         public Impl neoplasiaEnabled(boolean value) {
             neoplasiaEnabled = value;
             try (TagWrite write = TagWrite.of(rc.rules)) { write.w(NEOPLASIA_ENABLED, value); }
@@ -452,15 +465,11 @@ public class Forts extends Gamemode {
                     Blocks.surgeWall,
                     Blocks.surgeWallLarge,
                     Blocks.scrapWall,
-                    Blocks.carbideWall,
                     Blocks.mendProjector,
                     Blocks.overdriveProjector, // May be re-enabled in future
                     Blocks.overdriveDome,
                     Blocks.shockMine,
-                    Blocks.overflowDuct,
-                    Blocks.overflowGate,
                     Blocks.ductUnloader,
-                    Blocks.reinforcedPump,
                     Blocks.reinforcedConduit,
                     Blocks.reinforcedLiquidJunction,
                     Blocks.reinforcedBridgeConduit,
@@ -518,30 +527,12 @@ public class Forts extends Gamemode {
                     Blocks.reinforcedMessage
             );
             rules.hideBannedBlocks = true;
+            rc.customRules.overdriveIgnoresCheat(true);
         }
 
         @Override
         public String builtInContentPatch() {
-            return
-                    "block.scrap-wall.alwaysReplace: true\n" +
-                    "unit.poly.health: 90\n" +
-                    "unit.flare.health: 150\n" +
-                    "block.cyclone.ammoTypes: {\n" +
-                    "    metaglass.splashDamage: 65\n" +
-                    "    blast-compound.splashDamage: 100\n" +
-                    "    plastanium.splashDamage: 95\n" +
-                    "    surge-alloy.splashDamage: 125\n" +
-                    "}\n" +
-                    "block.titan.ammoTypes.thorium: {\n" +
-                    "    buildingDamageMultiplier: 0.01\n" +
-                    "    damage: 200\n" +
-                    "    splashDamage: 800\n" +
-                    "    splashDamagePierce: true\n" +
-                    "    splashDamageRadius: 80\n" +
-                    "}\n" +
-                    "block.oxidation-chamber.canOverdrive: true\n" +
-                    "block.thorium-reactor.health: 10\n" +
-                    "block.neoplasia-reactor.health: 10\n";
+            return builtInContentPatch;
         }
     }
 }
