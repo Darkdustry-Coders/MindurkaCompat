@@ -38,9 +38,12 @@ import mindustry.Vars;
 import mindustry.game.Team;
 import mindustry.gen.Icon;
 import mindustry.gen.Tex;
+import mindustry.gen.Unit;
 import mindustry.graphics.Pal;
 import mindustry.type.Item;
 import mindustry.type.ItemStack;
+import mindustry.type.StatusEffect;
+import mindustry.type.UnitType;
 import mindustry.ui.Styles;
 import mindustry.world.Block;
 
@@ -169,6 +172,47 @@ public class RulesWrite {
     }
     public BoolCtl b(String tlKey, Boolp def, Boolc onClick) {
         return w(tlKey, def, onClick);
+    }
+
+    public static class StrCtl {
+        public static final StrCtl throwaway = new StrCtl();
+
+        public Boolp enabled = TRUE;
+        public StrCtl enabled(Boolp value) {
+            enabled = value;
+            return this;
+        }
+
+        String _prevValue;
+    }
+
+    public StrCtl s(String tlKey, Prov<String> def, Cons<String> onClick) {
+        if (!shouldAdd(tlKey)) return StrCtl.throwaway;
+
+        final StrCtl ctl = new StrCtl();
+        ctl._prevValue = def.get();
+
+        Cell<Table> cell = root.table(t -> {
+            t.left();
+            t.add("@" + tlKey).left().padRight(5).marginTop(0).marginBottom(0)
+                    .update(a -> a.setColor(ctl.enabled.get() ? Color.white : Color.gray));
+            t.field(ctl._prevValue, s -> {
+                        ctl._prevValue = s;
+                        onClick.get(s);
+                    })
+                    .update(a -> {
+                        a.setDisabled(!ctl.enabled.get());
+                        String v = def.get();
+                        if (!v.equals(ctl._prevValue)) {
+                            ctl._prevValue = v;
+                            a.setText(v);
+                        }
+                    }).marginTop(0).marginBottom(0).width(120f).left();
+        }).padTop(0);
+        cell.pad(6).get().left().row();
+        root.row();
+
+        return ctl;
     }
 
     public static class IntCtl {
@@ -449,6 +493,33 @@ public class RulesWrite {
             return this;
         }
     }
+
+    public static class UnitCtl {
+        private Boolf<UnitType> filter = unit -> true;
+
+        public UnitCtl filter(Boolf<UnitType> value) {
+            filter = value;
+            return this;
+        }
+    }
+    public static class ItemCtl {
+        private Boolf<Item> filter = item -> true;
+
+        public ItemCtl filter(Boolf<Item> value) {
+            filter = value;
+            return this;
+        }
+    }
+    public static class StatusCtl {
+        private Boolp enabled = TRUE;
+        private Boolf<StatusEffect> filter = status -> true;
+
+        public StatusCtl filter(Boolf<StatusEffect> value) {
+            filter = value;
+            return this;
+        }
+    }
+
     public BlockCtl block(String tlKey, Cons<Block> onClick, Prov<Block> def) {
         if (!shouldAdd(tlKey)) return new BlockCtl();
 
@@ -461,6 +532,10 @@ public class RulesWrite {
                 update(() -> {
                     b.setDisabled(!ctl.enabled.get());
                     b.setChecked(false);
+                    setDrawable(new TextureRegionDrawable(
+                        def.get().uiIcon,
+                        4f / Math.min(def.get().uiIcon.width, def.get().uiIcon.height)
+                    ));
                 });
             }}).grow()).margin(4).size(50).padRight(10).get();
             b.add("@"+tlKey);
@@ -468,6 +543,85 @@ public class RulesWrite {
             Image image = (Image) ((Stack) (table[0].getChildren().get(0))).getChildren().get(1);
             image.setDrawable(new TextureRegionDrawable(block.uiIcon, 4f / Math.min(block.uiIcon.width, block.uiIcon.height)));
             onClick.get(block);
+        }, def.get())).left().width(300f).padLeft(6).row();
+
+        return ctl;
+    }
+    public UnitCtl unit(String tlKey, Cons<UnitType> onClick, Prov<UnitType> def) {
+        if (!shouldAdd(tlKey)) return new UnitCtl();
+
+        UnitCtl ctl = new UnitCtl();
+        final Table[] table = new Table[1];
+
+        root.button(b -> {
+            b.left();
+            table[0] = b.table(Tex.pane, in -> in.stack(new Image(Tex.clear), new Image(new TextureRegionDrawable(def.get().uiIcon, 4f / Math.min(def.get().uiIcon.width, def.get().uiIcon.height))) {{
+                update(() -> {
+                    b.setChecked(false);
+                    setDrawable(new TextureRegionDrawable(
+                        def.get().uiIcon,
+                        4f / Math.min(def.get().uiIcon.width, def.get().uiIcon.height)
+                    ));
+                });
+            }}).grow()).margin(4).size(50).padRight(10).get();
+            b.add("@"+tlKey);
+        }, () -> new UnitSelectDialog("@" + tlKey).show(ctl.filter, unit -> {
+            Image image = (Image) ((Stack) (table[0].getChildren().get(0))).getChildren().get(1);
+            image.setDrawable(new TextureRegionDrawable(unit.uiIcon, 4f / Math.min(unit.uiIcon.width, unit.uiIcon.height)));
+            onClick.get(unit);
+        }, def.get())).left().width(300f).padLeft(6).row();
+
+        return ctl;
+    }
+    public ItemCtl item(String tlKey, Cons<Item> onClick, Prov<Item> def) {
+        if (!shouldAdd(tlKey)) return new ItemCtl();
+
+        ItemCtl ctl = new ItemCtl();
+        final Table[] table = new Table[1];
+
+        root.button(b -> {
+            b.left();
+            table[0] = b.table(Tex.pane, in -> in.stack(new Image(Tex.clear), new Image(new TextureRegionDrawable(def.get().uiIcon, 4f / Math.min(def.get().uiIcon.width, def.get().uiIcon.height))) {{
+                update(() -> {
+                    b.setChecked(false);
+                    setDrawable(new TextureRegionDrawable(
+                        def.get().uiIcon,
+                        4f / Math.min(def.get().uiIcon.width, def.get().uiIcon.height)
+                    ));
+                });
+            }}).grow()).margin(4).size(50).padRight(10).get();
+            b.add("@"+tlKey);
+        }, () -> new ItemSelectDialog("@" + tlKey).show(ctl.filter, item -> {
+            Image image = (Image) ((Stack) (table[0].getChildren().get(0))).getChildren().get(1);
+            image.setDrawable(new TextureRegionDrawable(item.uiIcon, 4f / Math.min(item.uiIcon.width, item.uiIcon.height)));
+            onClick.get(item);
+        }, def.get())).left().width(300f).padLeft(6).row();
+
+        return ctl;
+    }
+    public StatusCtl status(String tlKey, Cons<StatusEffect> onClick, Prov<StatusEffect> def) {
+        if (!shouldAdd(tlKey)) return new StatusCtl();
+
+        StatusCtl ctl = new StatusCtl();
+        final Table[] table = new Table[1];
+
+        root.button(b -> {
+            b.left();
+            table[0] = b.table(Tex.pane, in -> in.stack(new Image(Tex.clear), new Image(new TextureRegionDrawable(def.get().uiIcon, 4f / Math.min(def.get().uiIcon.width, def.get().uiIcon.height))) {{
+                update(() -> {
+                    b.setChecked(false);
+                    b.setDisabled(!ctl.enabled.get());
+                    setDrawable(new TextureRegionDrawable(
+                        def.get().uiIcon,
+                        4f / Math.min(def.get().uiIcon.width, def.get().uiIcon.height)
+                    ));
+                });
+            }}).grow()).margin(4).size(50).padRight(10).get();
+            b.add("@"+tlKey);
+        }, () -> new StatusSelectDialog("@" + tlKey).show(ctl.filter, status -> {
+            Image image = (Image) ((Stack) (table[0].getChildren().get(0))).getChildren().get(1);
+            image.setDrawable(new TextureRegionDrawable(status.uiIcon, 4f / Math.min(status.uiIcon.width, status.uiIcon.height)));
+            onClick.get(status);
         }, def.get())).left().width(300f).padLeft(6).row();
 
         return ctl;
