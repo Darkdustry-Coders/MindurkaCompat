@@ -8,10 +8,9 @@ import mindustry.game.Team;
 import mindustry.world.Block;
 
 public class ToolOptions {
-    // public FortsPlotState fortsToggleState = FortsPlotState.enabled;
     public boolean fortsCarverPlace = true;
     public int radius = 1;
-    public Block selectedBlock = Blocks.stone;
+    public Block selectedBlock = Blocks.coreShard;
     public Team team = Team.sharded;
     public EditorTool tool = EditorTool.pencil;
 
@@ -21,6 +20,7 @@ public class ToolOptions {
     public Blend blend;
     public FortsPlotState fortsPlotState = FortsPlotState.enabled;
     public boolean floorsAsOverlays = false;
+    public String hubServer = "";
 
     public @Nullable BitMap fakeCliffsMap() {
         if (!cliffAuto) return null;
@@ -35,9 +35,10 @@ public class ToolOptions {
         tool = EditorTool.pencil;
         radius = 1;
         fortsCarverPlace = true;
-        // fortsToggleState = FortsPlotState.enabled;
+        fortsPlotState = FortsPlotState.enabled;
         cliffAuto = false;
         cliffSides = (byte) 0;
         blend = Blend.normal;
+        hubServer = "";
     }
 }

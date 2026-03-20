@@ -58,6 +58,7 @@ import mindustry.io.MapIO;
 import mindustry.maps.Map;
 import mindustry.ui.Styles;
 import mindustry.ui.dialogs.BaseDialog;
+import mindustry.ui.dialogs.LoadoutDialog;
 import mindustry.ui.dialogs.MapPlayDialog;
 import mindustry.world.Block;
 import mindustry.world.blocks.environment.OverlayFloor;
@@ -68,6 +69,15 @@ import mindustry.world.meta.Env;
 public class OEditorDialog extends MapEditorDialog {
     private final OMapView view;
     private final OMapEditor editor;
+    private MapInfoDialog infoDialog;
+    private final MapLoadDialog loadDialog = new MapLoadDialog(map -> Vars.ui.loadAnd(() -> {
+        try {
+            MVars.mapEditor.OBeginEdit(map);
+        } catch (Exception e) {
+            Vars.ui.showException(e);
+            Log.err(e);
+        }
+    }));
     private BaseDialog menu;
 
     private Rules lastSavedRules = null;
@@ -86,6 +96,7 @@ public class OEditorDialog extends MapEditorDialog {
         super();
 
         this.editor = editor;
+        Reflect.set(MapEditorDialog.class, this, "loadDialog", loadDialog);
         view = (MVars.mapView = new OMapView());
 
         background(Styles.black);
@@ -137,6 +148,9 @@ public class OEditorDialog extends MapEditorDialog {
         shown(this::build);
 
         buildMenu();
+
+        // Without this patch editor kills itself.
+        infoDialog = Reflect.get(MapEditorDialog.class, this, "infoDialog");
     }
 
     @Override
@@ -337,8 +351,13 @@ public class OEditorDialog extends MapEditorDialog {
 
                     if (MVars.rules.gamemode() != null && MVars.rules.gamemodeFactory() == Gamemodes.forts) {
                         tools.row();
-                        addTool.get(EditorTool.fortsPlotToggle);
-                        addTool.get(EditorTool.fortsPlotCarver);
+                        if (EditorTool.fortsPlotToggle.visibleIf.get()) addTool.get(EditorTool.fortsPlotToggle);
+                        if (EditorTool.fortsPlotCarver.visibleIf.get()) addTool.get(EditorTool.fortsPlotCarver);
+                    }
+
+                    if (MVars.rules.gamemode() != null && MVars.rules.gamemodeFactory() == Gamemodes.hub) {
+                        tools.row();
+                        addTool.get(EditorTool.hubServerConfig);
                     }
                 };
                 refreshTools.run();
@@ -392,7 +411,6 @@ public class OEditorDialog extends MapEditorDialog {
         });
 
         Table[] configTable = { null };
-        Block[] lastBlock = { null };
 
         cont.table(search -> {
             search.image(Icon.zoom).padRight(8);
@@ -646,6 +664,7 @@ public class OEditorDialog extends MapEditorDialog {
 
             if (view.editorAction == null) for (EditorTool tool : EditorTool.values()) {
                 if (tool.lockedBehind != null && tool.lockedBehind != MVars.rules.gamemodeFactory()) continue;
+                if (tool.visibleIf != null && !tool.visibleIf.get()) continue;
                 if (tool.key() == KeyCode.unset) continue;
                 if (!Core.input.keyTap(tool.key())) continue;
                 MVars.toolOptions.tool = tool;
@@ -669,7 +688,6 @@ public class OEditorDialog extends MapEditorDialog {
 
         menu.cont.table(t -> {
             final MapGenerateDialog generateDialog = Reflect.get(MapEditorDialog.class, this, "generateDialog");
-            final MapLoadDialog loadDialog = Reflect.get(MapEditorDialog.class, this, "loadDialog");
 
             t.defaults().size(swidth, 60f).padBottom(5).padRight(5).padLeft(5);
 
@@ -702,7 +720,7 @@ public class OEditorDialog extends MapEditorDialog {
                                     if(MapIO.isImage(file)){
                                         Vars.ui.showInfo("@editor.errorimage");
                                     }else{
-                                        editor.beginEdit(MapIO.createMap(file, true));
+                                        editor.OBeginEdit(MapIO.createMap(file, true));
                                     }
                                 });
                             })),
@@ -712,7 +730,7 @@ public class OEditorDialog extends MapEditorDialog {
                                     Vars.ui.loadAnd(() -> {
                                         try{
                                             Pixmap pixmap = new Pixmap(file);
-                                            editor.beginEdit(pixmap);
+                                            editor.OBeginEdit(pixmap);
                                             pixmap.dispose();
                                         }catch(Exception e){
                                             Vars.ui.showException("@editor.errorload", e);

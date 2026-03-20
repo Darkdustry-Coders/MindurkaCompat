@@ -1,10 +1,16 @@
 package mindurka;
 
+import arc.Core;
 import arc.Events;
 import arc.util.Log;
+import arc.util.Nullable;
+import arc.util.Reflect;
 import mindurka.rules.MRules;
+import mindurka.util.Report;
 import mindustry.Vars;
 import mindustry.game.EventType;
+import mindustry.mod.Mod;
+import mindustry.mod.Mods;
 
 public class MindurkaCompat {
     private MindurkaCompat() {}
@@ -25,10 +31,30 @@ public class MindurkaCompat {
         });
 
         Events.on(EventType.ClientLoadEvent.class, event -> {
-            MIcons.load();
-            Injects.load();
-        });
+            @Nullable Mods.LoadedMod patchEditor = Vars.mods.getMod("patch-editor");
+            MVars.patchEditorLoaded = patchEditor != null && patchEditor.enabled();
 
-        // TODO: Packet bullshit (i.e. fill).
+            MIcons.load();
+            if (MVars.patchEditorLoaded) {
+                // MindurkaCompat MUST apply patches last for consistent results.
+                // Or does that mean patch editor goes last? Who knows!
+                Core.app.post(() -> Core.app.post(() -> {
+                    Injects.load();
+                    try {
+                        Class<?> eui = Class.forName("MinRi2.PatchEditor.ui.EUI");
+                        Reflect.invoke(eui, null, "addUI", Util.noargs);
+                    } catch (Throwable e) {
+                        Report.withException(e);
+                    }
+                }));
+            } else Injects.load();
+
+            try {
+
+            } catch (Exception e) {
+                Log.err("Test failed", e);
+                Vars.ui.showException("Test failed", e);
+            }
+        });
     }
 }

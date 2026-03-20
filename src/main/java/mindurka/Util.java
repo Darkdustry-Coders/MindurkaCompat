@@ -1,6 +1,8 @@
 package mindurka;
 
-import arc.util.io.Streams;
+import arc.struct.ByteSeq;
+
+import java.nio.ByteBuffer;
 
 public class Util {
     private Util() {}
@@ -50,5 +52,51 @@ public class Util {
         x = x % a;
         if (x < 0) x = x + a;
         return x;
+    }
+
+    public interface Yeet<T> {
+        T run() throws Exception;
+    }
+    public static <T> T yeet(Yeet<T> fn) {
+        try {
+            return fn.run();
+        } catch (Exception e) {
+            throw new RuntimeException("Yeet!", e);
+        }
+    }
+
+    public interface YeetV {
+        void run() throws Exception;
+    }
+    public static void yeet(YeetV fn) {
+        try {
+            fn.run();
+        } catch (Exception e) {
+            throw new RuntimeException("Yeet!", e);
+        }
+    }
+
+    public static void writeShort(ByteSeq a, short value) {
+        a.add((byte) (value / 256));
+        a.add((byte) (value % 256));
+    }
+    public static short readShort(ByteSeq a, int pos) {
+        if (pos + 1 >= a.size) throw new ArrayIndexOutOfBoundsException("Cannot read short number! (" + (pos + 1) + " >= " + a.size + ")");
+        int most = a.get(pos) * 256;
+        int least = a.get(pos + 1) & 0xff;
+
+        return (short) (most >= 0 ? most + least : most - least);
+    }
+
+    private static final ByteBuffer intBuffer = ByteBuffer.allocate(4);
+    public static void writeInt(ByteSeq a, int value) {
+        intBuffer.position(0);
+        intBuffer.putInt(value);
+        a.addAll(intBuffer.array());
+    }
+    public static int readInt(ByteSeq a, int pos) {
+        intBuffer.position(0);
+        intBuffer.put(a.items, pos, 4);
+        return intBuffer.getInt(0);
     }
 }

@@ -8,7 +8,6 @@ import mindurka.MVars;
 import mindurka.ui.RulesWrite;
 import mindustry.Vars;
 import mindustry.game.Rules;
-import mindustry.maps.Map;
 import mindustry.mod.DataPatcher;
 
 // What I've learned:
@@ -25,7 +24,6 @@ public class MRules {
     // Used
     public static final String PATCH = PREFIX+".patch";
     public static final String FORMAT_VER = "1";
-    public static final String PATCH_VER = "1";
     public static final String GAMEMODE = PREFIX+".gamemode";
     public static final String GAMEMODE_LEGACY = "mindurkaGamemode"; // Does not use `mdrk.*` convention as it's a legacy key.
                                                                      // But it's a great legacy, so we depend on it.
@@ -43,6 +41,7 @@ public class MRules {
         {
             @Nullable String format = rules.tags.get(FORMAT);
             if (format == null) {
+                legacyServer = true;
                 return;
             }
             if (!format.equals(FORMAT_VER)) {
@@ -55,11 +54,13 @@ public class MRules {
 
         {
             @Nullable String gamemodeName = rules.tags.get(GAMEMODE);
+            legacyServer = false;
             if (gamemodeName == null) {
                 gamemodeName = rules.tags.get(GAMEMODE_LEGACY);
                 rules.tags.put(GAMEMODE, gamemodeName);
             }
             if (gamemodeName == null) {
+                legacyServer = true;
                 Vars.ui.showErrorMessage("MindurkaCompat: Format version 1 requires gamemode to be specified.");
                 return;
             }
@@ -93,6 +94,9 @@ public class MRules {
         }
     }
 
+    private boolean legacyServer = false;
+    public boolean legacyServer() { return legacyServer; }
+
     private @Nullable Gamemode.Impl gamemode;
     public @Nullable Gamemode.Impl gamemode() { return gamemode; }
     public @Nullable Gamemode gamemodeFactory() { return gamemode == null ? null : gamemode.factory(); }
@@ -104,14 +108,14 @@ public class MRules {
             Vars.state.patcher.patches.remove(0);
         }
 
-        if (gamemode != null && (gamemode.factory() != newValue || !Core.input.shift())) gamemode.remove();
+        if (gamemode != null && (gamemodeFactory() != newValue || !Core.input.shift())) gamemode.remove();
         if (newValue == null) remove();
         else {
-            if (!Core.input.shift() || gamemode.factory() != newValue) gamemode = newValue.create(newRulesContext());
+            if (gamemodeFactory() == null || gamemode.factory() != newValue) gamemode = newValue.create(newRulesContext());
             rules.tags.put(FORMAT, FORMAT_VER);
             rules.tags.put(GAMEMODE, newValue.name());
             rules.tags.put(GAMEMODE_LEGACY, newValue.name());
-            rules.tags.put(PATCH, PATCH_VER);
+            rules.tags.put(PATCH, MVars.version + "");
             if (!Core.input.shift()) gamemode.setRules();
         }
         if (MVars.editorDialog.isShown()) MVars.editorDialog.refreshTools();

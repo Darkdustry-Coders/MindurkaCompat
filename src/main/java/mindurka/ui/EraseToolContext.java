@@ -95,8 +95,8 @@ public class EraseToolContext implements ToolContext {
     @Override
     public void setAny(int x, int y, Block block) {
         if (block == null) return;
-        if (block.isFloor()) setFloor(x, y, block.asFloor());
-        else if (block.isOverlay()) setOverlay(x, y, block);
+        if (block.isOverlay()) setOverlay(x, y, block);
+        else if (block.isFloor()) setFloor(x, y, block.asFloor());
         else setBlock(x, y, block);
     }
 
@@ -105,7 +105,7 @@ public class EraseToolContext implements ToolContext {
         Tile tile = Vars.world.tiles.get(x, y);
         if (tile == null) return;
         if (floor != null) {
-            if (MVars.toolOptions.floorsAsOverlays) tile.setOverlay(Blocks.empty.asFloor());
+            if (MVars.toolOptions.floorsAsOverlays) tile.setOverlay(Blocks.air.asFloor());
             else tile.setFloor(Blocks.empty.asFloor());
         }
     }
@@ -151,6 +151,11 @@ public class EraseToolContext implements ToolContext {
 
     @Override
     public boolean isLayer() {
+        return true;
+    }
+
+    @Override
+    public boolean isErase() {
         return true;
     }
 

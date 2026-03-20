@@ -13,6 +13,7 @@ import arc.func.Intc;
 import arc.func.Intp;
 import arc.func.Prov;
 import arc.graphics.Color;
+import arc.graphics.g2d.TextureRegion;
 import arc.scene.style.TextureRegionDrawable;
 import arc.scene.ui.Button;
 import arc.scene.ui.ButtonGroup;
@@ -21,9 +22,13 @@ import arc.scene.ui.Image;
 import arc.scene.ui.ImageButton;
 import arc.scene.ui.Label;
 import arc.scene.ui.TextButton;
+import arc.scene.ui.TextField;
 import arc.scene.ui.layout.Cell;
+import arc.scene.ui.layout.Scl;
 import arc.scene.ui.layout.Stack;
 import arc.scene.ui.layout.Table;
+import arc.struct.IntSet;
+import arc.struct.ObjectSet;
 import arc.struct.OrderedMap;
 import arc.struct.Seq;
 import arc.util.Log;
@@ -327,7 +332,8 @@ public class RulesWrite {
         if (!shouldAdd(tlKey)) return;
 
         final Table table = new Table();
-        root.add(table).fillX().row();
+        root.add(table).left().row();
+        table.defaults().left();
 
         class TeamData {
             boolean shown;
@@ -340,16 +346,16 @@ public class RulesWrite {
                 this.shown = shown;
 
                 container.button(team.coloredName(), Icon.downOpen, Styles.togglet, () -> this.shown = !this.shown)
-                    .marginLeft(14).width(260).height(55).update(t -> {
-                        ((Image) t.getChildren().get(1)).setDrawable(buttonIcon());
-                        t.setChecked(this.shown);
-                    }).left().padBottom(2).row();
+                        .marginLeft(14).width(260).height(55).update(t -> {
+                            ((Image) t.getChildren().get(1)).setDrawable(buttonIcon());
+                            t.setChecked(this.shown);
+                        }).left().padBottom(2).row();
                 container.collapser(c -> {
                     c.defaults().left();
                     RulesWrite write = new RulesWrite(c, filter);
                     write.parent = RulesWrite.this;
                     sectionConf.get(team, write);
-                }, () -> this.shown).left().fillX().row();
+                }, () -> this.shown).left().padBottom(2).fillX().row();
                 table.add(container).fillX().padLeft(6).row();
             }
 
@@ -360,14 +366,74 @@ public class RulesWrite {
 
         final OrderedMap<Team, TeamData> dataList = new OrderedMap<>();
 
+        class AbstractTeamData {
+            Team team = null;
+            final Table mainContainer = new Table();
+            final Button button;
+            Table contentsTable;
+
+            TextureRegionDrawable buttonIcon() { return (team == null || dataList.containsKey(team)) ? Icon.cancel : button.isChecked() ? Icon.downOpen : Icon.upOpen; }
+
+            AbstractTeamData() {
+                button = new Button(Styles.togglet);
+
+                Image image = new Image(Icon.cancel);
+                Cell<Image> imageCell = button.add(image).left().size(Icon.cancel.imageSize() / Scl.scl(1)).padLeft(-((Icon.downOpen.imageSize() + Icon.cancel.imageSize() / 2) / Scl.scl(1)));
+
+                final TextField textField = new TextField();
+                textField.setValidator(text -> {
+                    if (!Strings.canParsePositiveInt(text)) return false;
+                    int v = Strings.parseInt(text);
+                    return v >= 0 && v < 255;
+                });
+                textField.changed(() -> {
+                    if (!textField.isValid()) team = null;
+                    else team = Team.all[Strings.parseInt(textField.getText())];
+
+                    image.setDrawable(buttonIcon());
+                    contentsTable.clear();
+                    if (team == null || dataList.containsKey(team)) {
+                        button.setChecked(false);
+                    } else {
+                        textField.color.set(team.color);
+                        RulesWrite write = new RulesWrite(contentsTable, filter);
+                        write.parent = RulesWrite.this;
+                        sectionConf.get(team, write);
+                    }
+                });
+                button.add(textField).fillX().pad(0).margin(0);
+
+                button.clicked(() -> {
+                    if (!textField.isValid() || dataList.containsKey(team)) {
+                        button.setChecked(false);
+                        return;
+                    }
+
+                    image.setDrawable(buttonIcon());
+                });
+
+                mainContainer.add(button).marginLeft(14).width(260).height(55).padBottom(2).left().row();
+
+                mainContainer.collapser(c -> {
+                    c.clear();
+                    contentsTable = c;
+                    c.defaults().left();
+                }, button::isChecked).left().marginBottom(2).row();
+
+                table.add(mainContainer).left().padLeft(6);
+            }
+        }
+
         for (Team team : Team.baseTeams) {
             dataList.put(team, new TeamData(team));
         }
         for (Team team : Team.all) {
-            if (!enabled.get(team)) continue;
             if (dataList.containsKey(team)) continue;
+            if (!enabled.get(team)) continue;
             dataList.put(team, new TeamData(team));
         }
+
+        new AbstractTeamData();
     }
 
     public static class BlockCtl {
@@ -404,28 +470,65 @@ public class RulesWrite {
             onClick.get(block);
         }, def.get())).left().width(300f).padLeft(6).row();
 
-        // root.table(t -> {
-        //     t.left();
-        //     t.add("@" + tlKey).left().padRight(5).marginTop(0).marginBottom(0)
-        //             .update(a -> a.setColor(ctl.enabled.get() ? Color.white : Color.gray));
-        //     final ImageButton button = new ImageButton(Tex.whiteui, Styles.clearNonei);
-        //     button.getStyle().imageUp = new TextureRegionDrawable(def.get().uiIcon);
-        //     button.resizeImage(32f);
-        //     button.setSize(32f, 32f);
-        //     button.update(() -> {
-        //         button.setDisabled(!ctl.enabled.get());
-        //         button.setChecked(false);
-        //     });
-        //     button.clicked(() -> {
-        //         BlockSelectDialog dialog = new BlockSelectDialog("@" + tlKey);
-        //         dialog.show(ctl.filter, block -> {
-        //             onClick.get(block);
-        //             button.getStyle().imageUp = new TextureRegionDrawable(block.uiIcon);
-        //             button.resizeImage(32f);
-        //         }, def.get());
-        //     });
-        //     t.add(button).left();
-        // }).left().padLeft(6).row();
+        return ctl;
+    }
+
+    public static class TeamCtl {
+        private Boolp enabled = TRUE;
+
+        public TeamCtl enabled(Boolp value) {
+            enabled = value;
+            return this;
+        }
+    }
+    public TeamCtl team(String tlKey, Cons<Team> onClick, Prov<Team> def) {
+        if (!shouldAdd(tlKey)) return new TeamCtl();
+
+        TeamCtl ctl = new TeamCtl();
+        final Table[] table = new Table[1];
+
+        root.table(t -> {
+            t.left();
+            t.label(() -> "@"+tlKey);
+
+            final TextField field = new TextField();
+            field.setValidator(text -> {
+                if (!Strings.canParsePositiveInt(text)) return false;
+                int v = Strings.parseInt(text);
+                return v >= 0 && v < 255;
+            });
+            field.update(() -> {
+                field.setDisabled(!ctl.enabled.get());
+            });
+            field.changed(() -> {
+                if (!field.isValid()) return;
+                Team team = Team.all[Strings.parseInt(field.getText())];
+                field.color.set(team.color);
+                onClick.get(team);
+            });
+            field.color.set(def.get().color);
+            field.setText("" + def.get().id);
+
+            for (Team team : Team.baseTeams) {
+                ImageButton button = new ImageButton(Tex.whiteui, Styles.clearNoneTogglei);
+                button.setSize(32, 32);
+                button.margin(4);
+                button.getImageCell().grow();
+                button.update(() -> {
+                    button.setChecked(def.get() == team);
+                    button.setDisabled(!ctl.enabled.get());
+                });
+                button.getStyle().imageUpColor = team.color;
+                button.clicked(() -> {
+                    onClick.get(team);
+                    field.setText("" + team.id);
+                    field.color.set(team.color);
+                });
+                t.add(button).size(50, 50).left();
+            }
+
+            t.add(field).width(70).pad(2);
+        }).left().padLeft(6).row();
 
         return ctl;
     }
