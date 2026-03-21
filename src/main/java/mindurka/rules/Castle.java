@@ -186,7 +186,6 @@ public class Castle extends Gamemode {
             ));
             rules.hideBannedBlocks = true;
             rc.customRules.overdriveIgnoresCheat(false);
-            Log.info("tags: @", rules.tags);
         }
 
         private Block block;
