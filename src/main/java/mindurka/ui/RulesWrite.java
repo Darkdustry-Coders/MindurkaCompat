@@ -196,18 +196,20 @@ public class RulesWrite {
             t.left();
             t.add("@" + tlKey).left().padRight(5).marginTop(0).marginBottom(0)
                     .update(a -> a.setColor(ctl.enabled.get() ? Color.white : Color.gray));
-            t.field(ctl._prevValue, s -> {
+            final TextField[] field = new TextField[1];
+            field[0] = t.field(ctl._prevValue, s -> {
                         ctl._prevValue = s;
                         onClick.get(s);
                     })
                     .update(a -> {
                         a.setDisabled(!ctl.enabled.get());
                         String v = def.get();
-                        if (!v.equals(ctl._prevValue)) {
+                        boolean notFocused = a.getScene() == null || a.getScene().getKeyboardFocus() != a;
+                        if (notFocused || !v.equals(ctl._prevValue)) {
                             ctl._prevValue = v;
                             a.setText(v);
                         }
-                    }).marginTop(0).marginBottom(0).width(120f).left();
+                    }).marginTop(0).marginBottom(0).width(120f).left().get();
         }).padTop(0);
         cell.pad(6).get().left().row();
         root.row();

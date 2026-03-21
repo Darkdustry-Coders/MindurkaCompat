@@ -10,9 +10,12 @@ import mindustry.game.Rules;
 import mindustry.game.Team;
 
 public abstract class Gamemode {
-    @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
     public abstract class Impl {
         protected final RulesContext rc;
+
+        protected Impl(RulesContext rc) {
+            this.rc = rc;
+        }
 
         public final Gamemode factory() { return Gamemode.this; }
 
@@ -87,55 +90,56 @@ public abstract class Gamemode {
         public void editingResumed() {}
     }
 
-     public static Gamemode UNKNOWN = new Gamemode() {
-         @Override
-         public String name() {
-             return "unknown";
-         }
+    public static Gamemode UNKNOWN = new Gamemode() {
+        @Override
+        public String name() {
+            return "unknown";
+        }
 
-         @Override
-         Impl create(RulesContext rc) {
-             return new Impl(rc) {
-                 @Override void remove() {}
-                 @Override
-                 protected void _setRules() {}
-             };
-         }
-     };
+        @Override
+        Impl create(RulesContext rc) {
+            return new Impl(rc) {
+                @Override void remove() {}
+                @Override
+                protected void _setRules() {}
+            };
+        }
+    };
 
-     /**
-      * A unique name for this gamemode.
-      * <p>
-      * This is an internal name, for localized name use {@link arc.Core#bundle}.
-      */
-     public abstract String name();
-     /**
-      * Create an instance of this gamemode.
-      * <p>
-      * This method is used by {@link MRules} and is not intended to be called
-      * directly.
-      */
-     abstract Impl create(RulesContext rc);
+    /**
+     * A unique name for this gamemode.
+     * <p>
+     * This is an internal name, for localized name use {@link arc.Core#bundle}.
+     */
+    public abstract String name();
+    /**
+     * Create an instance of this gamemode.
+     * <p>
+     * This method is used by {@link MRules} and is not intended to be called
+     * directly.
+     */
+    abstract Impl create(RulesContext rc);
 
-     private static final OrderedMap<String, Gamemode> factories = new OrderedMap<>();
+    private static final OrderedMap<String, Gamemode> factories = new OrderedMap<>();
 
-     public static void addGamemode(Gamemode factory) {
-         factories.put(factory.name(), factory);
-     }
+    public static void addGamemode(Gamemode factory) {
+        factories.put(factory.name(), factory);
+    }
 
-     private static boolean initialized = false;
-     public static void init() {
-         if (initialized) throw new IllegalStateException("Already initialized");
-         initialized = true;
+    private static boolean initialized = false;
+    public static void init() {
+        if (initialized) throw new IllegalStateException("Already initialized");
+        initialized = true;
 
-         addGamemode(Gamemodes.forts);
-         addGamemode(Gamemodes.hub);
-     }
-     public static @Nullable Gamemode forName(String name) {
-         return factories.get(name);
-     }
+        addGamemode(Gamemodes.forts);
+        addGamemode(Gamemodes.hub);
+        addGamemode(Gamemodes.castle);
+    }
+    public static @Nullable Gamemode forName(String name) {
+        return factories.get(name);
+    }
 
-     public static Seq<String> keys() {
-         return factories.orderedKeys();
-     }
+    public static Seq<String> keys() {
+        return factories.orderedKeys();
+    }
 }

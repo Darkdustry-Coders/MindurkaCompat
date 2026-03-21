@@ -29,15 +29,13 @@ public class MRules {
                                                                      // But it's a great legacy, so we depend on it.
     public static final String OVERDRIVE_IGNORES_CHEAT = PREFIX+".overdriveIgnoresCheat";
 
-    private final Rules rules;
+    private Rules rules() { return Vars.state.rules; }
     private final int mapWidth, mapHeight;
 
     public MRules(Rules rules) { this(rules, Vars.world.width(), Vars.world.height()); }
     public MRules(Rules rules, int mapWidth, int mapHeight) {
-        this.rules = rules;
         this.mapWidth = mapWidth;
         this.mapHeight = mapHeight;
-
         {
             @Nullable String format = rules.tags.get(FORMAT);
             if (format == null) {
@@ -78,15 +76,15 @@ public class MRules {
     }
 
     private RulesContext newRulesContext() {
-        return new RulesContext(this, rules, mapWidth, mapHeight);
+        return new RulesContext(this, rules(), mapWidth, mapHeight);
     }
 
     private void remove() {
-        rules.tags.remove(FORMAT);
-        rules.tags.remove(GAMEMODE);
-        rules.tags.remove(GAMEMODE_LEGACY);
-        rules.tags.remove(PATCH);
-        rules.tags.remove(OVERDRIVE_IGNORES_CHEAT);
+        rules().tags.remove(FORMAT);
+        rules().tags.remove(GAMEMODE);
+        rules().tags.remove(GAMEMODE_LEGACY);
+        rules().tags.remove(PATCH);
+        rules().tags.remove(OVERDRIVE_IGNORES_CHEAT);
 
         if (gamemode != null) {
             gamemode.remove();
@@ -112,10 +110,10 @@ public class MRules {
         if (newValue == null) remove();
         else {
             if (gamemodeFactory() == null || gamemode.factory() != newValue) gamemode = newValue.create(newRulesContext());
-            rules.tags.put(FORMAT, FORMAT_VER);
-            rules.tags.put(GAMEMODE, newValue.name());
-            rules.tags.put(GAMEMODE_LEGACY, newValue.name());
-            rules.tags.put(PATCH, MVars.version + "");
+            rules().tags.put(FORMAT, FORMAT_VER);
+            rules().tags.put(GAMEMODE, newValue.name());
+            rules().tags.put(GAMEMODE_LEGACY, newValue.name());
+            rules().tags.put(PATCH, MVars.version + "");
             if (!Core.input.shift()) gamemode.setRules();
         }
         if (MVars.editorDialog.isShown()) MVars.editorDialog.refreshTools();
@@ -173,7 +171,7 @@ public class MRules {
     public MRules overdriveIgnoresCheat(boolean value) {
         if (gamemode == null) return this;
         overdriveIgnoresCheat = value;
-        try (TagWrite write = TagWrite.of(rules)) { write.w(OVERDRIVE_IGNORES_CHEAT, value); }
+        try (TagWrite write = TagWrite.of(rules())) { write.w(OVERDRIVE_IGNORES_CHEAT, value); }
         return this;
     }
 }
