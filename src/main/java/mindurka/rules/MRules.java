@@ -7,6 +7,7 @@ import arc.util.Nullable;
 import lombok.AllArgsConstructor;
 import mindurka.MVars;
 import mindurka.ui.RulesWrite;
+import mindurka.util.SerializerSkip;
 import mindustry.Vars;
 import mindustry.game.Rules;
 import mindustry.game.Team;
@@ -35,8 +36,10 @@ public class MRules {
     public static final String PVP_TEAM_DEATH_REQUIRED_HEAD = TEAM_PREFIX+".pvpTeamDeathRequired.";
 
     private final Rules rules;
+    @SerializerSkip
     private final int mapWidth, mapHeight;
     public final TeamRules[] teams = new TeamRules[256];
+    @SerializerSkip
     public final int originalPatchVer;
 
     private Runnable refreshTeamRules = null;
@@ -46,6 +49,7 @@ public class MRules {
 
     public static class TeamRules {
         public final Team team;
+        @SerializerSkip
         private final RulesContext rc;
 
         public TeamRules(RulesContext rc, Team team) {
@@ -164,7 +168,8 @@ public class MRules {
     public boolean legacyServer() { return legacyServer; }
 
     private @Nullable Gamemode.Impl gamemode;
-    public @Nullable Gamemode.Impl gamemode() { return gamemode; }
+    @SuppressWarnings("unchecked")
+    public <G extends Gamemode.Impl> @Nullable G gamemode() { return (G) gamemode; }
     public @Nullable Gamemode gamemodeFactory() { return gamemode == null ? null : gamemode.factory(); }
     public MRules gamemode(@Nullable Gamemode newValue) {
         a: {
@@ -183,6 +188,7 @@ public class MRules {
             rules.tags.put(GAMEMODE_LEGACY, newValue.name());
             rules.tags.put(PATCH, MVars.version + "");
             if (!Core.input.shift() && !gamemode.factory().vanillaGamemode) gamemode.setRules();
+            gamemode.dataFixer();
         }
         if (MVars.editorDialog.isShown()) MVars.editorDialog.refreshTools();
 

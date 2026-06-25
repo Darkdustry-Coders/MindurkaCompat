@@ -100,6 +100,13 @@ public class OEditorDialog extends MapEditorDialog {
         super();
 
         this.editor = editor;
+        Reflect.set(MapEditorDialog.class, this, "resizeDialog", new OMapResizeDialog((width, height, shiftX, shiftY) -> {
+            if (!(editor.width() == width && editor.height() == height && shiftX == 0 && shiftY == 0)) {
+                Vars.ui.loadAnd(() -> {
+                    editor.resize(width, height, shiftX, shiftY);
+                });
+            }
+        }));
         resizeDialog = Reflect.get(MapEditorDialog.class, this, "resizeDialog");
 
         Reflect.set(MapEditorDialog.class, this, "loadDialog", loadDialog);

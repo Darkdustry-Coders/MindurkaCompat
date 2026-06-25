@@ -62,7 +62,7 @@ public class Hub extends Gamemode {
         }
 
         private final Seq<Server> servers = new Seq<>(Server.class);
-        public Iterator<Server> servers() { return servers.iterator(); }
+        public Seq<Server> servers() { return servers; }
         public void addServer(Server server) {
             servers.addUnique(server);
             saveServers();
@@ -71,7 +71,7 @@ public class Hub extends Gamemode {
             servers.remove(server);
             saveServers();
         }
-        private void saveServers() {
+        public void saveServers() {
             Jval.JsonArray array = new Jval.JsonArray();
             for (int i = 0; i < servers.size; i++) {
                 Server server = servers.items[i];

@@ -7,7 +7,6 @@ import arc.graphics.g2d.GlyphLayout;
 import arc.graphics.g2d.Lines;
 import arc.graphics.g2d.TextureRegion;
 import arc.math.geom.Vec2;
-import arc.scene.ui.layout.Scl;
 import arc.struct.ObjectIntMap;
 import arc.struct.ObjectMap;
 import arc.struct.Seq;
@@ -21,6 +20,7 @@ import mindurka.util.Schematic;
 import mindustry.Vars;
 import mindustry.content.Blocks;
 import mindustry.content.Items;
+import mindustry.content.Planets;
 import mindustry.game.Rules;
 import mindustry.game.Team;
 import mindustry.gen.Icon;
@@ -30,14 +30,14 @@ import mindustry.type.StatusEffect;
 import mindustry.type.UnitType;
 import mindustry.ui.Fonts;
 import mindustry.world.Block;
+import mindustry.world.blocks.defense.turrets.Turret;
+import mindustry.world.blocks.distribution.Sorter;
 import mindustry.world.blocks.environment.Floor;
 import mindustry.world.blocks.environment.Prop;
 import mindustry.world.blocks.environment.SpawnBlock;
 import mindustry.world.meta.Env;
 
 import java.util.Iterator;
-
-import static mindustry.Vars.*;
 
 public class Castle extends Gamemode {
 
@@ -302,9 +302,9 @@ public class Castle extends Gamemode {
                 Fonts.outline.setColor(Color.white);
 
             }
-            TextureRegion groundUnitIcon = content.units().find(unit -> !unit.flying && !unit.naval && !unit.isHidden() && !unit.isBanned()).uiIcon;
-            TextureRegion flyingUnitIcon = content.units().find(unit -> unit.flying && !unit.canBoost && !unit.isHidden() && !unit.isBanned()).uiIcon;
-            TextureRegion navalUnit = content.units().find(unit -> unit.naval && !unit.isHidden() && !unit.isBanned()).uiIcon;
+            TextureRegion groundUnitIcon = Vars.content.units().find(unit -> !unit.flying && !unit.naval && !unit.isHidden() && !unit.isBanned()).uiIcon;
+            TextureRegion flyingUnitIcon = Vars.content.units().find(unit -> unit.flying && !unit.canBoost && !unit.isHidden() && !unit.isBanned()).uiIcon;
+            TextureRegion navalUnit = Vars.content.units().find(unit -> unit.naval && !unit.isHidden() && !unit.isBanned()).uiIcon;
             drawDefenseSpawn(groundSpawn,groundUnitIcon);
             drawDefenseSpawn(airSpawn,flyingUnitIcon);
             drawDefenseSpawn(navalSpawn,navalUnit);
@@ -334,13 +334,13 @@ public class Castle extends Gamemode {
         }
         private void drawDropZones(TextureRegion icon){
             float lineScale = Core.settings.getInt("mindurka.guideslinewidth", 1);
-            world.tiles.eachTile(tile -> {
+            Vars.world.tiles.eachTile(tile -> {
                 if(tile.overlay() instanceof SpawnBlock){
                     Draw.reset();
                     Draw.color(Color.scarlet);
                     Lines.stroke(lineScale);
                     Vec2 spawn = new Vec2(MVars.mapView.unproject((float)tile.x+0.5f,(float)tile.y+0.5f));
-                    Vec2 v3 = new Vec2(MVars.mapView.unproject(tile.x,tile.y - rc.rules.dropZoneRadius / tilesize));
+                    Vec2 v3 = new Vec2(MVars.mapView.unproject(tile.x,tile.y - rc.rules.dropZoneRadius / Vars.tilesize));
                     Lines.circle(spawn.x,spawn.y,(spawn.y - v3.y));
                     Draw.reset();
                     Draw.color(Color.white);
@@ -416,10 +416,10 @@ public class Castle extends Gamemode {
             return this;
         }
 
-        private final ObjectIntMap<Item> itemCostMap     = new ObjectIntMap<>();
-        private final ObjectIntMap<Item> itemIntervalMap = new ObjectIntMap<>();
-        private final ObjectIntMap<Item> itemAmountMap   = new ObjectIntMap<>();
-        private final ObjectMap<Item,Block>   drillMap        = new ObjectMap<>();
+        private final ObjectIntMap<Item>     itemCostMap     = new ObjectIntMap<>();
+        private final ObjectIntMap<Item>     itemIntervalMap = new ObjectIntMap<>();
+        private final ObjectIntMap<Item>     itemAmountMap   = new ObjectIntMap<>();
+        private final ObjectMap<Item, Block> drillMap        = new ObjectMap<>();
 
         public int itemCostFor(Item i) {
             if (itemCostMap.containsKey(i)) return itemCostMap.get(i, 0);
@@ -482,9 +482,9 @@ public class Castle extends Gamemode {
             return this;
         }
 
-        private final ObjectIntMap<StatusEffect> statusDelayMap    = new ObjectIntMap<>();
-        private final ObjectIntMap<StatusEffect> statusDurationMap = new ObjectIntMap<>();
-        private final ObjectIntMap<StatusEffect> statusCostMap     = new ObjectIntMap<>();
+        private final ObjectIntMap<StatusEffect>       statusDelayMap    = new ObjectIntMap<>();
+        private final ObjectIntMap<StatusEffect>       statusDurationMap = new ObjectIntMap<>();
+        private final ObjectIntMap<StatusEffect>       statusCostMap     = new ObjectIntMap<>();
         private final ObjectMap<StatusEffect, Boolean> statusAllyMap     = new ObjectMap<>();
 
         public int statusCostFor(StatusEffect s) {
@@ -557,7 +557,7 @@ public class Castle extends Gamemode {
             if (item == Items.beryllium || item == Items.tungsten || item == Items.oxide
                     || item == Items.carbide || item == Items.fissileMatter || item == Items.dormantCyst) return Blocks.impactDrill;
 
-            return state.rules.hasEnv(Env.scorching) ? Blocks.impactDrill : Blocks.laserDrill;
+            return Vars.state.rules.hasEnv(Env.scorching) ? Blocks.impactDrill : Blocks.laserDrill;
         }
 
         @Override
@@ -577,7 +577,7 @@ public class Castle extends Gamemode {
             rules.coreIncinerates = true;
             rules.buildCostMultiplier = 1f;
             rules.buildSpeedMultiplier = 0.5f;
-            rules.dropZoneRadius = tilesize*6f;
+            rules.dropZoneRadius = Vars.tilesize*6f;
             rules.deconstructRefundMultiplier = 0.5f;
             rules.blockHealthMultiplier = 1f;
             rules.unitDamageMultiplier = 1f;
@@ -710,7 +710,7 @@ public class Castle extends Gamemode {
         }
 
         private final Seq<Castle.CastleBlock> blocks = new Seq<>(Castle.CastleBlock.class);
-        public Iterator<Castle.CastleBlock> blocks() { return blocks.iterator(); }
+        public Seq<Castle.CastleBlock> blocks() { return blocks; }
         public void placeBlock(Castle.CastleBlock block) {
             blocks.addUnique(block);
             saveBlocks();
@@ -719,7 +719,7 @@ public class Castle extends Gamemode {
             blocks.remove(block);
             saveBlocks();
         }
-        private void saveBlocks() {
+        public void saveBlocks() {
             Jval.JsonArray array = new Jval.JsonArray();
             for (int i = 0; i < blocks.size; i++) {
                 Castle.CastleBlock block = blocks.items[i];
@@ -736,7 +736,7 @@ public class Castle extends Gamemode {
             Vars.state.rules.tags.put(BLOCKS, array.toString());
         }
         private final Seq<Castle.CastleMiner> miners = new Seq<>(Castle.CastleMiner.class);
-        public Iterator<Castle.CastleMiner> miners() { return miners.iterator(); }
+        public Seq<Castle.CastleMiner> miners() { return miners; }
         public void addMiner(Castle.CastleMiner miner) {
             miners.addUnique(miner);
             saveMiners();
@@ -745,7 +745,7 @@ public class Castle extends Gamemode {
             miners.remove(miner);
             saveMiners();
         }
-        private void saveMiners() {
+        public void saveMiners() {
             Jval.JsonArray array = new Jval.JsonArray();
             for (int i = 0; i < miners.size; i++) {
                 Castle.CastleMiner miner = miners.items[i];
@@ -762,6 +762,31 @@ public class Castle extends Gamemode {
                 array.add(val);
             }
             Vars.state.rules.tags.put(MINERS, array.toString());
+        }
+
+        private void autoPort() {
+            Vars.world.tiles.eachTile(tile -> {
+                if (tile.block() == Blocks.sorter) {
+                    Item item = ((Sorter.SorterBuild) tile.build).sortItem;
+                    Block drill = (Vars.state.rules.planet == Planets.sun ? item.isOnPlanet(Planets.serpulo) : Vars.state.rules.planet == Planets.serpulo) ? Blocks.laserDrill : Blocks.impactDrill;
+                    int shift = (drill.size + 1) % 2;
+                    miners.add(new CastleMiner(drill, tile.x + shift, tile.y + shift, itemCostFor(item), itemAmountFor(item), itemIntervalFor(item), item));
+                    tile.setAir();
+                } else if (tile.block() instanceof Turret) {
+                    int shift = tile.block().size / 2;
+                    blocks.add(new CastleBlock(tile.block(), tile.x + shift, tile.y + shift, blockCostFor(tile.block()), true));
+                    tile.setAir();
+                }
+            });
+            saveBlocks();
+            saveMiners();
+            // TODO: Add a better mechanism for this.
+            MVars.mapEditor.undoCurrentOp();
+        }
+
+        @Override
+        public void dataFixer() {
+            if (MVars.rules.originalPatchVer < 9) autoPort();
         }
     }
 

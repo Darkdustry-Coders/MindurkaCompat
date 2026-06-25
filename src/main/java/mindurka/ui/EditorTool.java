@@ -264,20 +264,12 @@ public enum EditorTool {
 
             // This is on purpose, yes.
             if (ctx.isErase()) {
-                a: while (true) {
-                    for (Iterator<Hub.Server> it = ((Hub.Impl) MVars.rules.gamemode()).servers(); it.hasNext();) {
-                        Hub.Server server = it.next();
-                        if (server.contains(x1, y1)) {
-                            ((Hub.Impl) MVars.rules.gamemode()).remServer(server);
-                            continue a;
-                        }
-                    }
-                    break;
-                }
+                MVars.rules.<Hub.Impl>gamemode().servers().removeAll(server -> server.contains(x1, y1));
+                MVars.rules.<Hub.Impl>gamemode().saveServers();
             } else {
                 if (ctx.isLayer()) {
                     Hub.Server server = new Hub.Server(MVars.toolOptions.hubServer, Math.min(x1, x2), Math.min(y1, y2), size + 1);
-                    ((Hub.Impl) MVars.rules.gamemode()).addServer(server);
+                    MVars.rules.<Hub.Impl>gamemode().addServer(server);
                 } else for (int i = 0; i <= size; i++) for (int o = 0; o <= size; o++) {
                     int x = x1 + i * dx;
                     int y = y1 + o * dy;
@@ -333,23 +325,14 @@ public enum EditorTool {
                     return;
                 }
                 if (ctx.isErase()) {
-                    a:
-                    while (true) {
-                        for (Iterator<Castle.CastleBlock> it = ((Castle.Impl) MVars.rules.gamemode()).blocks(); it.hasNext(); ) {
-                            Castle.CastleBlock block = it.next();
-                            if (block.contains(x1, y1)) {
-                                ((Castle.Impl) MVars.rules.gamemode()).removeBlock(block);
-                                continue a;
-                            }
-                        }
-                        break;
-                    }
+                    MVars.rules.<Castle.Impl>gamemode().blocks().removeAll(block -> block.contains(x1, y1));
+                    MVars.rules.<Castle.Impl>gamemode().saveBlocks();
                 } else {
                     if (ctx.isLayer()) {
                         int bx = x1;
                         int by = y1;
                         Castle.CastleBlock b = new Castle.CastleBlock(MVars.toolOptions.current.selectedBlock, bx, by, MVars.toolOptions.blockCost, MVars.toolOptions.invincible || MVars.toolOptions.current.selectedBlock instanceof Turret);
-                        ((Castle.Impl) MVars.rules.gamemode()).placeBlock(b);
+                        MVars.rules.<Castle.Impl>gamemode().placeBlock(b);
                     }
                 }
             }catch (NumberFormatException | NullPointerException ignored) {}//idc
@@ -418,18 +401,10 @@ public enum EditorTool {
                     p.endx = bx + size - 1;
                     p.endy = by + size - 1;
                     return;
-                };
+                }
                 if (ctx.isErase()) {
-                    a: while (true) {
-                        for (Iterator<Castle.CastleMiner> it = ((Castle.Impl) MVars.rules.gamemode()).miners(); it.hasNext();) {
-                            Castle.CastleMiner miner = it.next();
-                            if (miner.contains(x1, y1)) {
-                                ((Castle.Impl) MVars.rules.gamemode()).remMiner(miner);
-                                continue a;
-                            }
-                        }
-                        break;
-                    }
+                    ((Castle.Impl) MVars.rules.gamemode()).miners().removeAll(miner -> miner.contains(x1, y1));
+                    ((Castle.Impl) MVars.rules.gamemode()).saveMiners();
                 } else {
                     if (ctx.isLayer()) {
                         int bx = x1;
@@ -438,7 +413,7 @@ public enum EditorTool {
                         ((Castle.Impl) MVars.rules.gamemode()).addMiner(b);
                     }
                 }
-            }catch (NumberFormatException | NullPointerException ignored) {}//idc
+            } catch (NumberFormatException | NullPointerException ignored) {}//idc
         }
     },
 

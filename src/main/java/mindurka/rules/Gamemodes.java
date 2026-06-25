@@ -11,4 +11,5 @@ public class Gamemodes {
     public static final Gamemode pvp = new BlankGamemode("pvp") {{ vanillaGamemode = true; }};
     public static final Gamemode spvp = new BlankGamemode("sandbox-pvp") {{ vanillaGamemode = true; }};
     public static final Gamemode survival = new BlankGamemode("survival") {{ vanillaGamemode = true; }};
+    public static final Gamemode miniPvP = new BlankGamemode("mini-pvp") {{ vanillaGamemode = true; }};
 }

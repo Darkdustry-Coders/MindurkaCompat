@@ -148,6 +148,7 @@ public abstract class Gamemode {
         addGamemode(Gamemodes.pvp);
         addGamemode(Gamemodes.spvp);
         addGamemode(Gamemodes.survival);
+        addGamemode(Gamemodes.miniPvP);
     }
     public static @Nullable Gamemode forName(String name) {
         return factories.get(name);
