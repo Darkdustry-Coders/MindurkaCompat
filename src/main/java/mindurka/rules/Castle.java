@@ -766,22 +766,23 @@ public class Castle extends Gamemode {
 
         private void autoPort() {
             Vars.world.tiles.eachTile(tile -> {
+                if (!tile.isCenter()) return;
                 if (tile.block() == Blocks.sorter) {
                     Item item = ((Sorter.SorterBuild) tile.build).sortItem;
                     Block drill = (Vars.state.rules.planet == Planets.sun ? item.isOnPlanet(Planets.serpulo) : Vars.state.rules.planet == Planets.serpulo) ? Blocks.laserDrill : Blocks.impactDrill;
                     int shift = (drill.size + 1) % 2;
                     miners.add(new CastleMiner(drill, tile.x + shift, tile.y + shift, itemCostFor(item), itemAmountFor(item), itemIntervalFor(item), item));
-                    tile.setAir();
+                    Core.app.post(() -> tile.setNet(Blocks.air));
                 } else if (tile.block() instanceof Turret) {
-                    int shift = tile.block().size / 2;
+                    int shift = (tile.block().size + 1) % 2;
                     blocks.add(new CastleBlock(tile.block(), tile.x + shift, tile.y + shift, blockCostFor(tile.block()), true));
-                    tile.setAir();
+                    Core.app.post(() -> tile.setNet(Blocks.air));
                 }
             });
             saveBlocks();
             saveMiners();
             // TODO: Add a better mechanism for this.
-            MVars.mapEditor.undoCurrentOp();
+            MVars.mapEditor.clearOp();
         }
 
         @Override

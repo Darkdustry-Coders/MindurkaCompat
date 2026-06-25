@@ -80,21 +80,24 @@ public class BOM {
     public static <T> void registerDeserializer(Class<T> klass, Func<DeserializerContext, T> read) {
         deserializers.put(klass, read);
     }
+    @SuppressWarnings("unchecked")
     public static <T> void registerSerializers(Class<T> klass, Cons<SerializerContext<T>> write) {
-        serializers.put(klass, write);
+        serializers.put(klass, (Cons<SerializerContext<?>>) (Object) write);
     }
 
     public static <T> T deserialize(Class<T> klass, Reads read) {
         @SuppressWarnings("unchecked")
-        final @Nullable Func<Reads, T> defined = (Func<Reads, T>) deserializers.get(klass);
+        final @Nullable Func<Reads, T> defined = (Func<Reads, T>) (Object) deserializers.get(klass);
         if (defined != null) return defined.get(read);
+        throw new IllegalStateException("todo");
     }
 
     static {
         registerDeserializer(Seq.class, ctx -> {
-            if (ctx.read.i() != TYPE_ARRAY) throw new Illegal
-            int len = ctx.read.i();
-            len
+            // if (ctx.read.i() != TYPE_ARRAY) throw new Illegal
+            // int len = ctx.read.i();
+            // len;
+            throw new IllegalStateException("todo");
         });
     }
 }

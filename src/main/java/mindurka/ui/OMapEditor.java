@@ -155,6 +155,12 @@ public class OMapEditor extends MapEditor {
     }
 
     @Override
+    public void clearOp() {
+        super.clearOp();
+        currentOp = null;
+    }
+
+    @Override
     public boolean canRedo() {
         return !redoStack.isEmpty();
     }
